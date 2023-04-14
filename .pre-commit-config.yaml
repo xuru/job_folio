@@ -1,0 +1,99 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+exclude: |
+  (?x)
+  # Maybe reactivate this when all README files include prettier ignore tags?
+  ^docs/|/migrations/|^README\.rst$|
+  # You don't usually want a bot to modify your legal texts
+  (LICENSE.*|COPYING.*)
+default_language_version:
+  # default language version for each language used in the repository
+  python: python3.10
+default_stages: [commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: /README\.rst$|\.pot?$
+      - id: end-of-file-fixer
+        types: [python]
+      - id: check-yaml
+      - id: detect-private-key
+      - id: check-ast
+      - id: check-json
+      - id: check-case-conflict
+      - id: check-merge-conflict
+        # exclude files where underlines are not distinguishable from merge conflicts
+        exclude: /README\.rst$|^docs/.*\.rst$
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: [ "--fix=lf" ]
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.3.1
+    hooks:
+      - id: pyupgrade
+        args: [--py310-plus]
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.4
+    hooks:
+      - id: bandit
+        args: [ "-iii", "-ll" ]
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        args: ["--config=setup.cfg"]
+        exclude: .+/(settings|migrations)/.+
+        fail_fast: true
+        additional_dependencies: [
+            "flake8-isort",
+            "flake8-bugbear",
+            "flake8-comprehensions",
+            "flake8-mutable",
+            "flake8-print",
+            "flake8-simplify",
+        ]
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v1.7.7
+    hooks:
+      - id: autoflake
+        exclude: fixtures|migrations|scripts
+        args:
+          - --in-place
+          - --ignore-init-module-imports
+          - --remove-all-unused-imports
+          - --expand-star-imports
+          - --remove-duplicate-keys
+          - --remove-unused-variables
+  - repo: https://github.com/ecugol/pre-commit-hooks-django
+    rev: v0.4.0
+    hooks:
+    -   id: check-untracked-migrations
+        fail_fast: true
+    -   id: check-absent-migrations
+        fail_fast: true
+  - repo: local
+    hooks:
+        - id: mypy
+          name: mypy
+          language: system
+          entry: python -m mypy --non-interactive --install-types --config-file pyproject.toml
+          files: \.py$
+          exclude: "[a-zA-Z]*/(migrations)/(.)*|config/settings/(.)*"
+
+# sets up .pre-commit-ci.yaml to ensure pre-commit dependencies stay up to date
+ci:
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
