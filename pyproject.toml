@@ -142,7 +142,7 @@ django-coverage-plugin = "^3.0.0"
 
 [tool.poetry.group.lint.dependencies]
 autopep8 = "^1.6.0"
-flake8 = "^4.0.1"
+flake8 = "^6.0.0"
 pylint = "^2.12.2"
 pylint-django = "^2.4.4"
 pre-commit = "^2.20.0"
