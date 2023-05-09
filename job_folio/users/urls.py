@@ -1,14 +1,13 @@
-from django.urls import path
+from django.urls import include, path
 
-from job_folio.users.views import (
-    user_detail_view,
-    user_redirect_view,
-    user_update_view,
-)
+from job_folio.users.views import UserDetailView, UserUpdateView
 
 app_name = "users"
+user_patterns = [
+    path("<int:user_id>", view=UserDetailView.as_view(), name="users_detail"),
+    path("<int:user_id>/update", view=UserUpdateView.as_view(), name="users_update"),
+]
+
 urlpatterns = [
-    path("~redirect/", view=user_redirect_view, name="redirect"),
-    path("~update/", view=user_update_view, name="update"),
-    path("<str:username>/", view=user_detail_view, name="detail"),
+    path("users/", include(user_patterns))
 ]

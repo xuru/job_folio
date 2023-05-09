@@ -5,101 +5,124 @@ volumes:
   job_folio_local_postgres_data_backups: {}
 
 services:
-  django: &django
+  api: &api
     build:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
-    image: job_folio_local_django
-    container_name: job_folio_local_django
+    container_name: api
     depends_on:
       - postgres
       - redis
       - mailhog
     volumes:
       - .:/app:z
+    environment:
+      WAIT_HOSTS: postgres:5432,redis:6379
     env_file:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres
     ports:
       - "8000:8000"
+    networks:
+      - jobdev
     command: /start
 
   postgres:
     build:
-      context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
-    image: job_folio_production_postgres
-    container_name: job_folio_local_postgres
+      context: compose/local/postgres
+      dockerfile: Dockerfile
+    container_name: postgres
     volumes:
-      - job_folio_local_postgres_data:/var/lib/postgresql/data
+      - job_folio_local_postgres_data:/var/lib/postgresql/data:rw
       - job_folio_local_postgres_data_backups:/backups
     env_file:
       - ./.envs/.local/.postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - jobdev
 
   docs:
-    image: job_folio_local_docs
-    container_name: job_folio_local_docs
+    container_name: docs
     build:
       context: .
       dockerfile: ./compose/local/docs/Dockerfile
     env_file:
       - ./.envs/.local/.django
+    environment:
+      WAIT_HOSTS: postgres:5432,redis:6379
     volumes:
       - ./docs:/docs:z
       - ./config:/app/config:z
       - ./job_folio:/app/job_folio:z
     ports:
       - "9000:9000"
+    networks:
+      - jobdev
     command: /start-docs
 
   mailhog:
     image: mailhog/mailhog:v1.0.0
-    container_name: job_folio_local_mailhog
+    container_name: mailhog
     ports:
       - "8025:8025"
+    networks:
+      - jobdev
 
   redis:
     image: redis:6
-    container_name: job_folio_local_redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - jobdev
 
-  celeryworker:
-    <<: *django
-    image: job_folio_local_celeryworker
-    container_name: job_folio_local_celeryworker
+  worker:
+    <<: *api
+    container_name: worker
     depends_on:
       - redis
       - postgres
       - mailhog
     ports: []
+    environment:
+      WAIT_HOSTS: postgres:5432,redis:6379
+    networks:
+      - jobdev
     command: /start-celeryworker
 
-  celerybeat:
-    <<: *django
-    image: job_folio_local_celerybeat
-    container_name: job_folio_local_celerybeat
+  beat:
+    <<: *api
+    container_name: beat
     depends_on:
       - redis
       - postgres
       - mailhog
     ports: []
+    environment:
+      WAIT_HOSTS: postgres:5432,redis:6379
+    networks:
+      - jobdev
     command: /start-celerybeat
 
   flower:
-    <<: *django
-    image: job_folio_local_flower
-    container_name: job_folio_local_flower
+    <<: *api
+    container_name: flower
     ports:
       - "5555:5555"
+    environment:
+      WAIT_HOSTS: postgres:5432,redis:6379
+    networks:
+      - jobdev
     command: /start-flower
 
   node:
     build:
       context: .
       dockerfile: ./compose/local/node/Dockerfile
-    image: job_folio_local_node
-    container_name: job_folio_local_node
+    container_name: node
     depends_on:
-      - django
+      - api
     volumes:
       - .:/app:z
       # http://jdlm.info/articles/2016/03/06/lessons-building-node-app-docker.html
@@ -107,3 +130,9 @@ services:
     command: npm run dev
     ports:
       - "3000:3000"
+    networks:
+      - jobdev
+
+networks:
+  jobdev:
+    name: jobdev

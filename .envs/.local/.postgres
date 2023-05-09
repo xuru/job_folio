@@ -5,3 +5,4 @@ POSTGRES_PORT=5432
 POSTGRES_DB=job_folio
 POSTGRES_USER=debug
 POSTGRES_PASSWORD=debug
+DATABASE_URL=psql://root:root@postgres:5432/job_folio
